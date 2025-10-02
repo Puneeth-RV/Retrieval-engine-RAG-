@@ -9,9 +9,10 @@ env/
 .venv/
 
 # Data directories (ignore large datasets, keep documentation)
-data/final_train/
-data/test_train/
+data/
 outputs/
+queries/Queries.json
+submissions/
 
 # Temporary files
 *.tmp
