@@ -1,4 +1,4 @@
-# retrieve.py
+# retrieval.py
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.qdrant import QdrantVectorStore

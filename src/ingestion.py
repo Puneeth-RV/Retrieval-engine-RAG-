@@ -1,4 +1,4 @@
-# src/ingest.py
+# src/ingestion.py
 import sys
 import os
 import time
@@ -47,7 +47,7 @@ def process_massive_dataset():
     file_paths = []
     for root, dirs, files in os.walk(config.DATA_PATH):
         for file in files:
-            if file.endswith(('.txt', '.json')):
+            if file.endswith(('.txt', '.json', '.pdf')):
                 full_path = os.path.join(root, file)
                 file_paths.append(full_path)
 
