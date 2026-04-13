@@ -25,6 +25,13 @@ def ensure_collection():
             ),
         )
 
+    # Ensure payload index exists for session_id filtering
+    client.create_payload_index(
+        collection_name=settings.COLLECTION_NAME,
+        field_name="session_id",
+        field_schema=models.PayloadSchemaType.KEYWORD,
+    )
+
 
 def upsert_chunks(
     chunks: list[str],

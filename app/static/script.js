@@ -19,7 +19,13 @@ const sendBtn = document.getElementById("send-btn");
 // --- File Upload ---
 
 // Click anywhere on drop zone to trigger file picker
-dropZone.addEventListener("click", () => fileInput.click());
+// (but not if clicking the label/button, which already triggers it)
+dropZone.addEventListener("click", (e) => {
+    if (e.target === dropZone || e.target.classList.contains("drop-text") ||
+        e.target.classList.contains("drop-subtext") || e.target.classList.contains("drop-hint")) {
+        fileInput.click();
+    }
+});
 
 // Drag and drop styling
 dropZone.addEventListener("dragover", (e) => {
@@ -44,7 +50,14 @@ fileInput.addEventListener("change", () => {
 async function handleFiles(files) {
     if (!files.length) return;
 
-    showUploadStatus("Uploading and processing...", "loading");
+    // Disable drop zone during upload
+    dropZone.style.pointerEvents = "none";
+    dropZone.style.opacity = "0.5";
+
+    showUploadStatus(
+        `<span class="spinner"></span> Uploading ${files.length} file(s) — chunking, embedding, and storing...`,
+        "loading"
+    );
 
     const formData = new FormData();
     formData.append("session_id", sessionId);
@@ -77,10 +90,14 @@ async function handleFiles(files) {
     } catch (err) {
         showUploadStatus("Upload failed. Please try again.", "error");
     }
+
+    // Re-enable drop zone
+    dropZone.style.pointerEvents = "";
+    dropZone.style.opacity = "";
 }
 
 function showUploadStatus(message, type) {
-    uploadStatus.textContent = message;
+    uploadStatus.innerHTML = message;
     uploadStatus.className = `upload-status ${type}`;
     uploadStatus.hidden = false;
 }
@@ -97,8 +114,12 @@ queryForm.addEventListener("submit", async (e) => {
     addMessage(question, "user");
     questionInput.value = "";
 
-    // Show thinking indicator
-    const thinkingEl = addMessage("Searching documents and generating answer...", "thinking");
+    // Show thinking indicator with animated dots
+    const thinkingEl = document.createElement("div");
+    thinkingEl.className = "message thinking";
+    thinkingEl.innerHTML = '<span class="spinner"></span> Searching documents and generating answer<span class="dots"></span>';
+    chatHistory.appendChild(thinkingEl);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
 
     // Disable input while processing
     questionInput.disabled = true;
