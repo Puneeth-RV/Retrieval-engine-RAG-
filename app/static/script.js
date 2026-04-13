@@ -11,6 +11,7 @@ async function initSession() {
 const dropZone = document.getElementById("drop-zone");
 const fileInput = document.getElementById("file-input");
 const uploadStatus = document.getElementById("upload-status");
+const fileChips = document.getElementById("file-chips");
 const chatHistory = document.getElementById("chat-history");
 const queryForm = document.getElementById("query-form");
 const questionInput = document.getElementById("question-input");
@@ -50,12 +51,15 @@ fileInput.addEventListener("change", () => {
 async function handleFiles(files) {
     if (!files.length) return;
 
+    // Show file chips
+    showFileChips(files);
+
     // Disable drop zone during upload
     dropZone.style.pointerEvents = "none";
     dropZone.style.opacity = "0.5";
 
     showUploadStatus(
-        `<span class="spinner"></span> Uploading ${files.length} file(s) — chunking, embedding, and storing...`,
+        `<span class="spinner"></span> Processing ${files.length} file(s)...`,
         "loading"
     );
 
@@ -79,7 +83,7 @@ async function handleFiles(files) {
 
         const data = await res.json();
         showUploadStatus(
-            `${data.files_processed} file(s) processed — ${data.chunks_created} chunks created`,
+            `${data.files_processed} file(s) processed &mdash; ${data.chunks_created} chunks created`,
             "success"
         );
 
@@ -94,6 +98,20 @@ async function handleFiles(files) {
     // Re-enable drop zone
     dropZone.style.pointerEvents = "";
     dropZone.style.opacity = "";
+}
+
+function showFileChips(files) {
+    fileChips.innerHTML = "";
+    for (const file of files) {
+        const chip = document.createElement("div");
+        chip.className = "file-chip";
+        const icon = file.name.endsWith(".pdf")
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+            : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+        chip.innerHTML = `${icon} ${file.name}`;
+        fileChips.appendChild(chip);
+    }
+    fileChips.hidden = false;
 }
 
 function showUploadStatus(message, type) {
@@ -153,7 +171,13 @@ queryForm.addEventListener("submit", async (e) => {
     questionInput.focus();
 });
 
+function clearEmptyState() {
+    const empty = chatHistory.querySelector(".empty-state");
+    if (empty) empty.remove();
+}
+
 function addMessage(text, type) {
+    clearEmptyState();
     const div = document.createElement("div");
     div.className = `message ${type}`;
     div.textContent = text;
@@ -162,24 +186,102 @@ function addMessage(text, type) {
     return div;
 }
 
+function formatAnswer(text) {
+    // Process line by line for clean, predictable output
+    const lines = text.split("\n");
+    let html = "";
+    let inList = false;
+    let listType = "";
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        // Escape HTML
+        line = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        // Apply inline formatting
+        line = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+        line = line.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+        // Headings: ## Heading or ### Heading
+        if (/^#{2,3}\s+/.test(line)) {
+            if (inList) { html += `</${listType}>`; inList = false; }
+            const content = line.replace(/^#{2,3}\s+/, "");
+            html += `<h4>${content}</h4>`;
+            continue;
+        }
+
+        // Numbered list: "1. item"
+        if (/^\d+\.\s+/.test(line)) {
+            const content = line.replace(/^\d+\.\s+/, "");
+            if (!inList || listType !== "ol") {
+                if (inList) html += `</${listType}>`;
+                html += "<ol>";
+                inList = true;
+                listType = "ol";
+            }
+            html += `<li>${content}</li>`;
+            continue;
+        }
+
+        // Bullet list: "- item" or "* item"
+        if (/^[-*]\s+/.test(line)) {
+            const content = line.replace(/^[-*]\s+/, "");
+            if (!inList || listType !== "ul") {
+                if (inList) html += `</${listType}>`;
+                html += "<ul>";
+                inList = true;
+                listType = "ul";
+            }
+            html += `<li>${content}</li>`;
+            continue;
+        }
+
+        // Close any open list
+        if (inList) {
+            html += `</${listType}>`;
+            inList = false;
+        }
+
+        // Empty line = paragraph break
+        if (line.trim() === "") {
+            continue;
+        }
+
+        // Regular text
+        html += `<p>${line}</p>`;
+    }
+
+    // Close any remaining open list
+    if (inList) {
+        html += `</${listType}>`;
+    }
+
+    return html;
+}
+
 function addAnswer(answer, sources) {
     const div = document.createElement("div");
     div.className = "message assistant";
 
-    // Answer text
-    const answerP = document.createElement("p");
-    answerP.textContent = answer;
-    div.appendChild(answerP);
+    // Answer text — render with formatting
+    const answerDiv = document.createElement("div");
+    answerDiv.className = "answer-content";
+    answerDiv.innerHTML = formatAnswer(answer);
+    div.appendChild(answerDiv);
 
-    // Source cards
+    // Collapsible source cards
     if (sources && sources.length > 0) {
         const sourcesDiv = document.createElement("div");
         sourcesDiv.className = "sources";
 
-        const label = document.createElement("div");
-        label.className = "sources-label";
-        label.textContent = "Sources";
-        sourcesDiv.appendChild(label);
+        const toggle = document.createElement("button");
+        toggle.className = "sources-toggle";
+        toggle.innerHTML = `<span class="toggle-arrow">&#9654;</span> Sources (${sources.length})`;
+        sourcesDiv.appendChild(toggle);
+
+        const sourcesList = document.createElement("div");
+        sourcesList.className = "sources-list collapsed";
 
         for (const source of sources) {
             const card = document.createElement("div");
@@ -200,15 +302,38 @@ function addAnswer(answer, sources) {
             card.appendChild(filename);
             card.appendChild(score);
             card.appendChild(preview);
-            sourcesDiv.appendChild(card);
+            sourcesList.appendChild(card);
         }
 
+        toggle.addEventListener("click", () => {
+            sourcesList.classList.toggle("collapsed");
+            toggle.classList.toggle("open");
+        });
+
+        sourcesDiv.appendChild(sourcesList);
         div.appendChild(sourcesDiv);
     }
 
     chatHistory.appendChild(div);
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
+
+// --- Theme Toggle ---
+const themeToggle = document.getElementById("theme-toggle");
+
+function setTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+}
+
+// Load saved theme or default to dark
+const savedTheme = localStorage.getItem("theme") || "dark";
+setTheme(savedTheme);
+
+themeToggle.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    setTheme(current === "dark" ? "light" : "dark");
+});
 
 // --- Start ---
 initSession();

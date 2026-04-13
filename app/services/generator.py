@@ -8,9 +8,18 @@ SYSTEM_PROMPT = """You are a helpful assistant that answers questions based on t
 
 Rules:
 - Only use information from the provided context to answer
-- Cite the source filename when referencing information
 - If the context doesn't contain enough information, say so clearly
-- Keep answers concise and direct"""
+- Keep answers concise
+
+Formatting (you MUST follow this exactly):
+- Start directly with a 1-2 sentence answer — no label like "Summary:" or "Answer:"
+- Use `## Heading` for section titles when needed (no bold for headings)
+- Use `- item` for bullet lists (always use dash, never asterisk)
+- Use `1. item` for numbered/sequential lists
+- Use **bold** only for key terms and source filenames within sentences
+- Separate sections with a blank line
+- Never prefix your response with labels like "Summary:", "Answer:", "Response:", etc.
+- Never use colons as fake headings like "Topic: description" — use proper headings instead"""
 
 
 async def generate_answer(

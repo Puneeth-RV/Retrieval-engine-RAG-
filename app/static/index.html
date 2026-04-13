@@ -4,44 +4,128 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DocuQuery — Ask Your Documents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Background glow -->
+    <div class="bg-glow"></div>
+
+    <div class="app">
         <!-- Header -->
         <header>
-            <h1>DocuQuery</h1>
-            <p class="tagline">Upload documents. Ask questions. Get answers.</p>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <h1>DocuQuery</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-badge">
+                    <span class="badge-dot"></span>
+                    RAG Pipeline
+                </div>
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                    <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                    <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                </button>
+            </div>
         </header>
 
-        <!-- Upload Section -->
-        <section id="upload-section">
-            <div id="drop-zone" class="drop-zone">
-                <p class="drop-text">Drag & drop files here</p>
-                <p class="drop-subtext">or</p>
-                <label class="file-label">
-                    Browse files
-                    <input type="file" id="file-input" multiple accept=".pdf,.txt" hidden>
-                </label>
-                <p class="drop-hint">PDF and TXT only — max 5 files, 10MB each</p>
-            </div>
-            <div id="upload-status" class="upload-status" hidden></div>
-        </section>
+        <!-- Hero tagline -->
+        <div class="hero">
+            <p>Upload your documents and get <span class="hero-accent">AI-powered answers</span> instantly</p>
+        </div>
 
-        <!-- Chat Section -->
-        <section id="chat-section">
-            <div id="chat-history" class="chat-history"></div>
-            <form id="query-form" class="query-form">
-                <input
-                    type="text"
-                    id="question-input"
-                    placeholder="Ask a question about your documents..."
-                    autocomplete="off"
-                    disabled
-                >
-                <button type="submit" id="send-btn" disabled>Send</button>
-            </form>
-        </section>
+        <!-- Main Content -->
+        <main>
+            <!-- Upload Section -->
+            <section id="upload-section" class="glass-card">
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <p class="drop-text">Drop your documents here</p>
+                    <label class="file-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Browse files
+                        <input type="file" id="file-input" multiple accept=".pdf,.txt" hidden>
+                    </label>
+                    <p class="drop-hint">PDF and TXT &mdash; up to 5 files, 10MB each</p>
+                </div>
+                <div id="file-chips" class="file-chips" hidden></div>
+                <div id="upload-status" class="upload-status" hidden></div>
+            </section>
+
+            <!-- Chat Section -->
+            <section id="chat-section" class="glass-card chat-card">
+                <div id="chat-history" class="chat-history">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <p class="empty-title">No conversation yet</p>
+                        <p class="empty-sub">Upload a document to start asking questions</p>
+                    </div>
+                </div>
+                <form id="query-form" class="query-form">
+                    <input
+                        type="text"
+                        id="question-input"
+                        placeholder="Ask anything about your documents..."
+                        autocomplete="off"
+                        disabled
+                    >
+                    <button type="submit" id="send-btn" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </form>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-stack">
+                <span>FastAPI</span>
+                <span class="footer-dot"></span>
+                <span>Jina Embeddings</span>
+                <span class="footer-dot"></span>
+                <span>Qdrant</span>
+                <span class="footer-dot"></span>
+                <span>Groq</span>
+            </div>
+        </footer>
     </div>
 
     <script src="/static/script.js"></script>
