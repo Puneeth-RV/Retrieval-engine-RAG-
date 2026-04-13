@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuQuery — Ask Your Documents</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>DocuQuery</h1>
+            <p class="tagline">Upload documents. Ask questions. Get answers.</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section id="upload-section">
+            <div id="drop-zone" class="drop-zone">
+                <p class="drop-text">Drag & drop files here</p>
+                <p class="drop-subtext">or</p>
+                <label class="file-label">
+                    Browse files
+                    <input type="file" id="file-input" multiple accept=".pdf,.txt" hidden>
+                </label>
+                <p class="drop-hint">PDF and TXT only — max 5 files, 10MB each</p>
+            </div>
+            <div id="upload-status" class="upload-status" hidden></div>
+        </section>
+
+        <!-- Chat Section -->
+        <section id="chat-section">
+            <div id="chat-history" class="chat-history"></div>
+            <form id="query-form" class="query-form">
+                <input
+                    type="text"
+                    id="question-input"
+                    placeholder="Ask a question about your documents..."
+                    autocomplete="off"
+                    disabled
+                >
+                <button type="submit" id="send-btn" disabled>Send</button>
+            </form>
+        </section>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
