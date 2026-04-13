@@ -8,21 +8,14 @@ venv/
 env/
 .venv/
 
-# Data directories (ignore large datasets, keep documentation)
-data/
-outputs/
-queries/Queries.json
-submissions/
-
-# Temporary files
-*.tmp
-*.temp
-src/tempCodeRunnerFile.py
-
 # Environment variables
 .env
 .env.local
 .env.production
+
+# Temporary files
+*.tmp
+*.temp
 
 # IDE files
 .vscode/
