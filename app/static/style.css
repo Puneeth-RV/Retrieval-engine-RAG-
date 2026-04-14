@@ -58,6 +58,27 @@
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
+/* ===== Apple-style squircle corners (G2 continuous) — progressive enhancement ===== */
+@supports (corner-shape: squircle) {
+    .logo-icon,
+    .theme-toggle,
+    .header-badge,
+    .glass-card,
+    .file-label,
+    .file-chip,
+    .upload-status,
+    .drop-icon,
+    .empty-icon,
+    .message.user,
+    .source-card,
+    .sources-toggle,
+    .query-form input,
+    .query-form button,
+    .answer-content code {
+        corner-shape: squircle;
+    }
+}
+
 /* ===== BASE ===== */
 body {
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -355,6 +376,10 @@ body.state-empty .welcome { display: block; }
     font-size: 0.76rem;
     color: var(--text-muted);
     font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .file-chip svg { opacity: 0.7; }

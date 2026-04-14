@@ -1,10 +1,53 @@
 let sessionId = null;
 
-// --- Initialize session on page load ---
+// --- Client-side limits (mirror backend) ---
+const MAX_FILES = 5;
+const MAX_FILE_SIZE_MB = 10;
+const ALLOWED_EXT = [".pdf", ".txt"];
+const MAX_QUESTION_LEN = 2000;
+const QUERY_TIMEOUT_MS = 90_000;
+const UPLOAD_TIMEOUT_MS = 180_000;
+
+// --- Safely extract a server error message from a Response ---
+async function safeErrorMessage(res, fallback) {
+    try {
+        const data = await res.json();
+        if (typeof data?.detail === "string") return data.detail;
+        if (Array.isArray(data?.detail) && data.detail[0]?.msg) return data.detail[0].msg;
+    } catch (_) { /* body wasn't JSON */ }
+    return fallback;
+}
+
+// --- fetch with timeout via AbortController ---
+async function fetchWithTimeout(url, options = {}, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// --- Initialize session on page load (retry once on failure) ---
 async function initSession() {
-    const res = await fetch("/api/session");
-    const data = await res.json();
-    sessionId = data.session_id;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            const res = await fetch("/api/session");
+            if (!res.ok) throw new Error(`status ${res.status}`);
+            const data = await res.json();
+            if (!data?.session_id) throw new Error("missing session_id");
+            sessionId = data.session_id;
+            return;
+        } catch (err) {
+            if (attempt === 1) {
+                showUploadStatus(
+                    "Couldn't connect to the server. Refresh the page to try again.",
+                    "error"
+                );
+            }
+        }
+    }
 }
 
 // --- DOM elements ---
@@ -47,8 +90,42 @@ fileInput.addEventListener("change", () => {
     fileInput.value = ""; // reset so same file can be re-uploaded
 });
 
+function validateFiles(files) {
+    if (files.length > MAX_FILES) {
+        return `Too many files. Maximum ${MAX_FILES} per upload.`;
+    }
+    for (const file of files) {
+        const name = file.name || "file";
+        const dot = name.lastIndexOf(".");
+        const ext = dot === -1 ? "" : name.slice(dot).toLowerCase();
+        if (!ALLOWED_EXT.includes(ext)) {
+            return `"${name}" is not a supported type. Use PDF or TXT.`;
+        }
+        if (file.size === 0) {
+            return `"${name}" is empty.`;
+        }
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+            return `"${name}" is ${sizeMb}MB. Maximum is ${MAX_FILE_SIZE_MB}MB.`;
+        }
+    }
+    return null;
+}
+
 async function handleFiles(files) {
     if (!files.length) return;
+
+    if (!sessionId) {
+        showUploadStatus("Session not ready yet. Please refresh the page.", "error");
+        return;
+    }
+
+    // Client-side validation before hitting the server
+    const validationError = validateFiles(files);
+    if (validationError) {
+        showUploadStatus(validationError, "error");
+        return;
+    }
 
     // Show file chips
     showFileChips(files);
@@ -69,14 +146,15 @@ async function handleFiles(files) {
     }
 
     try {
-        const res = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-        });
+        const res = await fetchWithTimeout(
+            "/api/upload",
+            { method: "POST", body: formData },
+            UPLOAD_TIMEOUT_MS
+        );
 
         if (!res.ok) {
-            const err = await res.json();
-            showUploadStatus(err.detail || "Upload failed", "error");
+            const msg = await safeErrorMessage(res, "Upload failed. Please try again.");
+            showUploadStatus(msg, "error");
             return;
         }
 
@@ -93,12 +171,15 @@ async function handleFiles(files) {
         sendBtn.disabled = false;
         questionInput.focus();
     } catch (err) {
-        showUploadStatus("Upload failed. Please try again.", "error");
+        const msg = err?.name === "AbortError"
+            ? "Upload timed out. Try a smaller file."
+            : "Upload failed. Check your connection and try again.";
+        showUploadStatus(msg, "error");
+    } finally {
+        // Always re-enable drop zone
+        dropZone.style.pointerEvents = "";
+        dropZone.style.opacity = "";
     }
-
-    // Re-enable drop zone
-    dropZone.style.pointerEvents = "";
-    dropZone.style.opacity = "";
 }
 
 function showFileChips(files) {
@@ -129,6 +210,19 @@ queryForm.addEventListener("submit", async (e) => {
     const question = questionInput.value.trim();
     if (!question) return;
 
+    if (!sessionId) {
+        addMessage("Session not ready. Please refresh the page.", "assistant");
+        return;
+    }
+
+    if (question.length > MAX_QUESTION_LEN) {
+        addMessage(
+            `Your question is too long (${question.length} chars). Please keep it under ${MAX_QUESTION_LEN}.`,
+            "assistant"
+        );
+        return;
+    }
+
     // Show user message
     addMessage(question, "user");
     questionInput.value = "";
@@ -145,31 +239,40 @@ queryForm.addEventListener("submit", async (e) => {
     sendBtn.disabled = true;
 
     try {
-        const res = await fetch("/api/query", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_id: sessionId, question }),
-        });
+        const res = await fetchWithTimeout(
+            "/api/query",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_id: sessionId, question }),
+            },
+            QUERY_TIMEOUT_MS
+        );
 
-        // Remove thinking indicator
         thinkingEl.remove();
 
         if (!res.ok) {
-            const err = await res.json();
-            addMessage(err.detail || "Something went wrong.", "assistant");
+            const msg = await safeErrorMessage(res, "Something went wrong.");
+            addMessage(msg, "assistant");
         } else {
             const data = await res.json();
-            addAnswer(data.answer, data.sources);
+            if (!data?.answer) {
+                addMessage("No answer returned. Please try a different question.", "assistant");
+            } else {
+                addAnswer(data.answer, data.sources || []);
+            }
         }
     } catch (err) {
         thinkingEl.remove();
-        addMessage("Failed to get a response. Please try again.", "assistant");
+        const msg = err?.name === "AbortError"
+            ? "The request took too long and was cancelled. Try a shorter question or try again."
+            : "Failed to get a response. Check your connection and try again.";
+        addMessage(msg, "assistant");
+    } finally {
+        questionInput.disabled = false;
+        sendBtn.disabled = false;
+        questionInput.focus();
     }
-
-    // Re-enable input
-    questionInput.disabled = false;
-    sendBtn.disabled = false;
-    questionInput.focus();
 });
 
 function clearEmptyState() {
