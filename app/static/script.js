@@ -12,6 +12,7 @@ const dropZone = document.getElementById("drop-zone");
 const fileInput = document.getElementById("file-input");
 const uploadStatus = document.getElementById("upload-status");
 const fileChips = document.getElementById("file-chips");
+const chatSection = document.getElementById("chat-section");
 const chatHistory = document.getElementById("chat-history");
 const queryForm = document.getElementById("query-form");
 const questionInput = document.getElementById("question-input");
@@ -22,10 +23,8 @@ const sendBtn = document.getElementById("send-btn");
 // Click anywhere on drop zone to trigger file picker
 // (but not if clicking the label/button, which already triggers it)
 dropZone.addEventListener("click", (e) => {
-    if (e.target === dropZone || e.target.classList.contains("drop-text") ||
-        e.target.classList.contains("drop-subtext") || e.target.classList.contains("drop-hint")) {
-        fileInput.click();
-    }
+    if (e.target.closest(".file-label")) return;
+    fileInput.click();
 });
 
 // Drag and drop styling
@@ -87,7 +86,9 @@ async function handleFiles(files) {
             "success"
         );
 
-        // Enable the chat input
+        // Reveal chat section and enable the input
+        chatSection.style.display = "";
+        document.body.classList.remove("state-empty");
         questionInput.disabled = false;
         sendBtn.disabled = false;
         questionInput.focus();
@@ -334,6 +335,26 @@ themeToggle.addEventListener("click", () => {
     const current = document.documentElement.getAttribute("data-theme");
     setTheme(current === "dark" ? "light" : "dark");
 });
+
+// --- Random tagline ---
+const TAGLINES = [
+    "Shred through the fine print.",
+    "Skip the scrolling. Just ask.",
+    "Crack open your documents.",
+    "Stop reading. Start asking.",
+    "Dig into your docs.",
+    "Every page, one question away.",
+    "Rip through the pages.",
+    "Cut straight to the answer.",
+    "Interrogate your PDFs.",
+    "Turn pages into answers.",
+    "No more Ctrl+F.",
+    "Don't read. Ask.",
+];
+const taglineEl = document.getElementById("tagline");
+if (taglineEl) {
+    taglineEl.textContent = TAGLINES[Math.floor(Math.random() * TAGLINES.length)];
+}
 
 // --- Start ---
 initSession();
