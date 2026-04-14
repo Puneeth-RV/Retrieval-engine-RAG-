@@ -30,3 +30,6 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Claude Code local context
+CLAUDE.md
