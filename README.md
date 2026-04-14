@@ -1,3 +1,13 @@
+---
+title: DocuQuery
+emoji: 📄
+colorFrom: orange
+colorTo: red
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # DocuQuery
 
 Upload documents. Ask questions. Get answers.
@@ -22,7 +32,7 @@ Each user gets an isolated session — your documents are only visible to you.
 | Vector Database | Qdrant Cloud |
 | LLM | Groq (Llama 3.1 8B) |
 | Frontend | HTML / CSS / JavaScript |
-| Hosting | Koyeb |
+| Hosting | Hugging Face Spaces |
 
 ## Run Locally
 
