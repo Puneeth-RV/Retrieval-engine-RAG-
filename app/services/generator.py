@@ -22,32 +22,69 @@ Formatting (you MUST follow this exactly):
 - Never use colons as fake headings like "Topic: description" — use proper headings instead"""
 
 
-async def generate_answer(
-    question: str,
-    chunks: list[str],
-    filenames: list[str],
-) -> str:
-    """
-    Generate an answer using Groq's Llama 3 model.
+REWRITE_PROMPT = """Given the conversation history and a follow-up question, rewrite the follow-up into a standalone question that can be understood without the history. If the follow-up is already standalone, return it unchanged. Only output the rewritten question — no preamble, no explanation."""
 
-    Takes the user's question and the retrieved context chunks,
-    builds a prompt, and returns the LLM's answer.
+
+async def rewrite_query(question: str, history: list[tuple[str, str]]) -> str:
     """
-    # Build context string with source labels
-    context = "\n\n---\n\n".join(
-        f"[Source: {filename}]\n{chunk}"
-        for chunk, filename in zip(chunks, filenames)
+    Rewrite a follow-up question into a standalone one using chat history.
+    Used to improve retrieval quality on follow-ups like "why?" or "tell me more".
+    """
+    if not history:
+        return question
+
+    history_text = "\n".join(
+        f"User: {q}\nAssistant: {a}" for q, a in history
     )
 
     response = await client.chat.completions.create(
         model=settings.GROQ_MODEL,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": REWRITE_PROMPT},
             {
                 "role": "user",
-                "content": f"Context:\n{context}\n\nQuestion: {question}",
+                "content": f"Chat history:\n{history_text}\n\nFollow-up: {question}\n\nStandalone question:",
             },
         ],
+        max_tokens=200,
+        temperature=0.0,
+    )
+
+    rewritten = response.choices[0].message.content.strip()
+    return rewritten or question
+
+
+async def generate_answer(
+    question: str,
+    chunks: list[str],
+    filenames: list[str],
+    history: list[tuple[str, str]] | None = None,
+) -> str:
+    """
+    Generate an answer using Groq's Llama 3 model.
+
+    Takes the user's question, retrieved context chunks, and optional
+    chat history, builds a prompt, and returns the LLM's answer.
+    """
+    context = "\n\n---\n\n".join(
+        f"[Source: {filename}]\n{chunk}"
+        for chunk, filename in zip(chunks, filenames)
+    )
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    for prev_q, prev_a in history or []:
+        messages.append({"role": "user", "content": prev_q})
+        messages.append({"role": "assistant", "content": prev_a})
+
+    messages.append({
+        "role": "user",
+        "content": f"Context:\n{context}\n\nQuestion: {question}",
+    })
+
+    response = await client.chat.completions.create(
+        model=settings.GROQ_MODEL,
+        messages=messages,
         max_tokens=settings.MAX_TOKENS,
         temperature=0.2,
     )

@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException
 
 from app.config import settings
 from app.services.embeddings import embed_query
-from app.services.generator import generate_answer
+from app.services.generator import generate_answer, rewrite_query
+from app.services.history import append_turn, get_history
 from app.services.vectorstore import search
 
 router = APIRouter()
@@ -18,18 +19,20 @@ class QueryRequest(BaseModel):
 @router.post("/api/query")
 async def query_documents(request: QueryRequest):
     """
-    Answer a question using the user's uploaded documents.
+    Answer a question using the user's uploaded documents and chat history.
 
-    Flow: embed question → search Qdrant (filtered by session) →
-          send chunks to Groq → return answer with sources
+    Flow: rewrite question using history → embed → search Qdrant →
+          send chunks + history to Groq → store turn → return answer
     """
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
-    # Step 1: Embed the question via Jina (~100ms)
-    query_vector = await embed_query(request.question)
+    history = get_history(request.session_id)
 
-    # Step 2: Search Qdrant for matching chunks, filtered by session (~50ms)
+    search_question = await rewrite_query(request.question, history)
+
+    query_vector = await embed_query(search_question)
+
     results = search(query_vector, request.session_id, settings.TOP_K)
 
     if not results:
@@ -38,15 +41,14 @@ async def query_documents(request: QueryRequest):
             "sources": [],
         }
 
-    # Step 3: Extract chunks and filenames from results
     chunks = [point.payload["text"] for point in results]
     filenames = [point.payload["filename"] for point in results]
     scores = [point.score for point in results]
 
-    # Step 4: Generate answer via Groq Llama 3 (~500ms)
-    answer = await generate_answer(request.question, chunks, filenames)
+    answer = await generate_answer(request.question, chunks, filenames, history)
 
-    # Step 5: Build source references
+    append_turn(request.session_id, request.question, answer)
+
     sources = [
         {
             "filename": filename,
