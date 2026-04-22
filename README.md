@@ -148,6 +148,10 @@ Tuned conservatively for free-tier hosting:
 
 ---
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, project conventions, and the pull-request checklist. For anything non-trivial, please open an issue first so we can align on the approach.
+
 ## License
 
-MIT
+[MIT](LICENSE) © Puneeth RV
