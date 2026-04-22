@@ -3,6 +3,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from app.config import settings
 from app.services.chunker import chunk_text
 from app.services.embeddings import embed_texts
+from app.services.generator import suggest_questions
 from app.services.pdf_parser import extract_text_from_pdf
 from app.services.vectorstore import upsert_chunks
 
@@ -83,8 +84,11 @@ async def upload_files(
     # Store in Qdrant with session_id metadata
     upsert_chunks(all_chunks, embeddings, all_metadatas)
 
+    suggestions = await suggest_questions(all_chunks)
+
     return {
         "status": "ok",
         "files_processed": len(files),
         "chunks_created": len(all_chunks),
+        "suggestions": suggestions,
     }

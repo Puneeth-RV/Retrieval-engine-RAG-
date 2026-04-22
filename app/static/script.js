@@ -170,6 +170,10 @@ async function handleFiles(files) {
         questionInput.disabled = false;
         sendBtn.disabled = false;
         questionInput.focus();
+
+        if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+            showSuggestions(data.suggestions);
+        }
     } catch (err) {
         const msg = err?.name === "AbortError"
             ? "Upload timed out. Try a smaller file."
@@ -200,6 +204,43 @@ function showUploadStatus(message, type) {
     uploadStatus.innerHTML = message;
     uploadStatus.className = `upload-status ${type}`;
     uploadStatus.hidden = false;
+}
+
+function showSuggestions(questions) {
+    const existing = chatHistory.querySelector(".suggestions");
+    if (existing) existing.remove();
+
+    const wrap = document.createElement("div");
+    wrap.className = "suggestions";
+
+    const label = document.createElement("div");
+    label.className = "suggestions-label";
+    label.textContent = "Try asking";
+    wrap.appendChild(label);
+
+    const list = document.createElement("div");
+    list.className = "suggestions-list";
+
+    for (const q of questions) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "suggestion-chip";
+        btn.textContent = q;
+        btn.addEventListener("click", () => {
+            questionInput.value = q;
+            queryForm.requestSubmit();
+        });
+        list.appendChild(btn);
+    }
+
+    wrap.appendChild(list);
+
+    const empty = chatHistory.querySelector(".empty-state");
+    if (empty) {
+        empty.appendChild(wrap);
+    } else {
+        chatHistory.appendChild(wrap);
+    }
 }
 
 // --- Chat / Query ---
@@ -336,6 +377,8 @@ function addAnswer(answer, sources) {
 function clearEmptyState() {
     const empty = chatHistory.querySelector(".empty-state");
     if (empty) empty.remove();
+    const sugg = chatHistory.querySelector(".suggestions");
+    if (sugg) sugg.remove();
 }
 
 function addMessage(text, type) {
