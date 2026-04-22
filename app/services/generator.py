@@ -76,27 +76,19 @@ def _build_messages(
     return messages
 
 
-async def generate_answer_stream(
+async def generate_answer(
     question: str,
     chunks: list[str],
     filenames: list[str],
     history: list[tuple[str, str]] | None = None,
-):
-    """
-    Stream answer tokens from Groq as they arrive.
-    Yields string deltas.
-    """
+) -> str:
     messages = _build_messages(question, chunks, filenames, history)
 
-    stream = await client.chat.completions.create(
+    response = await client.chat.completions.create(
         model=settings.GROQ_MODEL,
         messages=messages,
         max_tokens=settings.MAX_TOKENS,
         temperature=0.2,
-        stream=True,
     )
 
-    async for chunk in stream:
-        delta = chunk.choices[0].delta.content
-        if delta:
-            yield delta
+    return response.choices[0].message.content
