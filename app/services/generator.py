@@ -25,7 +25,7 @@ Formatting (you MUST follow this exactly):
 REWRITE_PROMPT = """Given the conversation history and a follow-up question, rewrite the follow-up into a standalone question that can be understood without the history. If the follow-up is already standalone, return it unchanged. Only output the rewritten question — no preamble, no explanation."""
 
 
-SUGGEST_PROMPT = """You are given excerpts from a user's uploaded document. Generate exactly 3 short, interesting questions a reader could ask about it. Questions should be concrete and specific to the content, not generic. Each question under 80 characters. Output ONLY a JSON array of 3 strings, nothing else. Example: ["Question 1?", "Question 2?", "Question 3?"]"""
+SUGGEST_PROMPT = """Generate exactly 3 short, interesting questions a reader could ask about the given document excerpts. Questions must be concrete and specific to the content (not generic). Each under 80 characters. Number them 1. 2. 3. — one per line, nothing else. No preamble, no explanation."""
 
 
 async def suggest_questions(chunks: list[str]) -> list[str]:
@@ -33,7 +33,7 @@ async def suggest_questions(chunks: list[str]) -> list[str]:
     Generate 3 starter questions based on sample document chunks.
     Returns an empty list on any failure — suggestions are nice-to-have.
     """
-    import json as _json
+    import re
 
     sample = "\n\n---\n\n".join(chunks[:5])[:4000]
 
@@ -46,22 +46,21 @@ async def suggest_questions(chunks: list[str]) -> list[str]:
             ],
             max_tokens=300,
             temperature=0.5,
-            response_format={"type": "json_object"},
         )
         raw = response.choices[0].message.content.strip()
-        parsed = _json.loads(raw)
-        if isinstance(parsed, list):
-            questions = parsed
-        elif isinstance(parsed, dict):
-            for v in parsed.values():
-                if isinstance(v, list):
-                    questions = v
-                    break
-            else:
-                return []
-        else:
-            return []
-        return [str(q) for q in questions if isinstance(q, str)][:3]
+
+        questions = []
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            # Strip leading number, dot, dash, bullet, quotes
+            cleaned = re.sub(r'^[\d\.\-\*\)\s"\'`]+', "", line).strip()
+            cleaned = cleaned.rstrip('"\'`')
+            if len(cleaned) > 3:
+                questions.append(cleaned)
+
+        return questions[:3]
     except Exception:
         return []
 
