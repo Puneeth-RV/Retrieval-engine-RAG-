@@ -14,7 +14,7 @@ pinned: false
 
 A production-style RAG (Retrieval-Augmented Generation) web app. Drop in your PDFs or text files, ask anything in natural language, and get concise answers backed by citations from your own documents — with conversational follow-ups that remember context.
 
-> **Live demo:** https://goodperson23etcs002094-docuquery.hf.space
+> **Live demo:** https://puneeth-rv-docuquery.hf.space
 
 ---
 
@@ -77,8 +77,8 @@ Retrieved chunks are injected as context; Groq's Llama 3.1 generates the answer 
 
 ```bash
 # 1. Clone
-git clone https://github.com/Puneeth-RV/Retrieval-engine-RAG-.git
-cd Retrieval-engine-RAG-
+git clone https://github.com/Puneeth-RV/DocuQuery.git
+cd DocuQuery
 
 # 2. Environment
 python -m venv venv
