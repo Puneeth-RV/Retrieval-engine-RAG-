@@ -35,14 +35,20 @@ async def query_documents(request: QueryRequest):
     query_vector = await embed_query(search_question)
     results = search(query_vector, request.session_id, settings.TOP_K)
 
+    def sse(data: dict) -> str:
+        return f"data: {json.dumps(data)}\n\n"
+
     async def event_stream():
+        # Initial comment flushes headers past proxies that wait for first byte
+        yield ": connected\n\n"
+
         if not results:
-            yield json.dumps({
+            yield sse({
                 "type": "token",
                 "text": "I don't have any documents to search. Please upload some files first.",
-            }) + "\n"
-            yield json.dumps({"type": "sources", "sources": []}) + "\n"
-            yield json.dumps({"type": "done"}) + "\n"
+            })
+            yield sse({"type": "sources", "sources": []})
+            yield sse({"type": "done"})
             return
 
         chunks = [point.payload["text"] for point in results]
@@ -57,7 +63,7 @@ async def query_documents(request: QueryRequest):
             }
             for filename, chunk, score in zip(filenames, chunks, scores)
         ]
-        yield json.dumps({"type": "sources", "sources": sources}) + "\n"
+        yield sse({"type": "sources", "sources": sources})
 
         full_answer = []
         try:
@@ -65,22 +71,23 @@ async def query_documents(request: QueryRequest):
                 request.question, chunks, filenames, history
             ):
                 full_answer.append(delta)
-                yield json.dumps({"type": "token", "text": delta}) + "\n"
+                yield sse({"type": "token", "text": delta})
         except Exception as e:
-            yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+            yield sse({"type": "error", "message": str(e)})
             return
 
         answer_text = "".join(full_answer)
         if answer_text.strip():
             append_turn(request.session_id, request.question, answer_text)
 
-        yield json.dumps({"type": "done"}) + "\n"
+        yield sse({"type": "done"})
 
     return StreamingResponse(
         event_stream(),
-        media_type="application/x-ndjson",
+        media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
         },
     )

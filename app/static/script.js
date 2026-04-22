@@ -291,13 +291,16 @@ async function streamAnswer(res, thinkingEl) {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop();
+        const events = buffer.split("\n\n");
+        buffer = events.pop();
 
-        for (const line of lines) {
-            if (!line.trim()) continue;
+        for (const block of events) {
+            const dataLine = block.split("\n").find((l) => l.startsWith("data:"));
+            if (!dataLine) continue;
+            const payload = dataLine.slice(5).trim();
+            if (!payload) continue;
             let evt;
-            try { evt = JSON.parse(line); } catch { continue; }
+            try { evt = JSON.parse(payload); } catch { continue; }
 
             if (evt.type === "sources") {
                 sources = evt.sources || [];
