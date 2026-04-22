@@ -76,4 +76,11 @@ async def query_documents(request: QueryRequest):
 
         yield json.dumps({"type": "done"}) + "\n"
 
-    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+    return StreamingResponse(
+        event_stream(),
+        media_type="application/x-ndjson",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
