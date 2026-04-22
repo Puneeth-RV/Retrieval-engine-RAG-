@@ -14,7 +14,7 @@ static_dir = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Runs on app startup — ensures Qdrant collection exists."""
+    """Runs on app startup - ensures Qdrant collection exists."""
     ensure_collection()
     yield
 

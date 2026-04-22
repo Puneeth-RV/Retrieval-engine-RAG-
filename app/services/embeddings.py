@@ -9,7 +9,7 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
     """
     Embed a batch of texts using Jina's API.
 
-    Used when uploading documents — sends all chunks in one API call.
+    Used when uploading documents - sends all chunks in one API call.
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -33,7 +33,7 @@ async def embed_query(text: str) -> list[float]:
     """
     Embed a single query string.
 
-    Convenience wrapper — used when a user asks a question.
+    Convenience wrapper - used when a user asks a question.
     """
     embeddings = await embed_texts([text])
     return embeddings[0]

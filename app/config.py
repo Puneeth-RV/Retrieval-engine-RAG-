@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # API Keys (required — set these in .env or environment)
+    # API Keys (required - set these in .env or environment)
     JINA_API_KEY: str
     QDRANT_URL: str
     QDRANT_API_KEY: str

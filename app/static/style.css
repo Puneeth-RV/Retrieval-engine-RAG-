@@ -5,7 +5,7 @@
 }
 
 /* ===== THEME VARIABLES ===== */
-/* Light (default) — warm cream, claude.ai style */
+/* Light (default) - warm cream, claude.ai style */
 :root {
     --bg: #faf9f5;
     --bg-elevated: #ffffff;
@@ -58,8 +58,8 @@
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-/* ===== Apple-style squircle corners (G2 continuous) — progressive enhancement ===== */
-/* Applies to every element — only elements with border-radius are visually affected */
+/* ===== Apple-style squircle corners (G2 continuous) - progressive enhancement ===== */
+/* Applies to every element - only elements with border-radius are visually affected */
 @supports (corner-shape: squircle) {
     *, *::before, *::after {
         corner-shape: squircle;
@@ -185,7 +185,7 @@ header h1 {
     font-weight: 500;
 }
 
-/* ===== CARDS — flat, minimal ===== */
+/* ===== CARDS - flat, minimal ===== */
 .glass-card {
     background: var(--bg-elevated);
     border: 1px solid var(--border);
@@ -232,7 +232,7 @@ main {
     font-size: 0.95rem;
 }
 
-/* Empty-state layout: anchor at optical center (~40% from top) — feels more designed than true-center */
+/* Empty-state layout: anchor at optical center (~40% from top) - feels more designed than true-center */
 body.state-empty main {
     justify-content: flex-start;
     align-items: center;
@@ -252,7 +252,7 @@ body.state-empty .welcome {
 
 body.state-empty .welcome { display: block; }
 
-/* ===== UPLOAD — compact strip ===== */
+/* ===== UPLOAD - compact strip ===== */
 .drop-zone {
     padding: 0.9rem 1.1rem;
     cursor: pointer;
@@ -474,7 +474,7 @@ body.state-empty .welcome { display: block; }
     transform: translateY(-1px);
 }
 
-/* ===== MESSAGES — plain blocks, no bubbles for assistant ===== */
+/* ===== MESSAGES - plain blocks, no bubbles for assistant ===== */
 .message {
     line-height: 1.7;
     font-size: 0.95rem;
@@ -486,7 +486,7 @@ body.state-empty .welcome { display: block; }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* User message — subtle warm bg, right-aligned */
+/* User message - subtle warm bg, right-aligned */
 .message.user {
     background: var(--bg-user-msg);
     border: none;
@@ -498,7 +498,7 @@ body.state-empty .welcome { display: block; }
     font-weight: 400;
 }
 
-/* Assistant message — plain, full width, no bubble */
+/* Assistant message - plain, full width, no bubble */
 .message.assistant {
     background: transparent;
     border: none;
@@ -851,12 +851,12 @@ footer {
     footer { padding: 1.25rem 0 0.5rem; }
     .footer-stack { font-size: 0.7rem; gap: 0.45rem; flex-wrap: wrap; }
 
-    /* Upload status / file chips — tighter margins */
+    /* Upload status / file chips - tighter margins */
     .file-chips { padding: 0 0.85rem 0.75rem; }
     .upload-status { margin: 0 0.85rem 0.85rem; font-size: 0.78rem; }
 }
 
-/* Narrow phones — stack upload strip vertically */
+/* Narrow phones - stack upload strip vertically */
 @media (max-width: 400px) {
     .drop-zone {
         flex-direction: column;

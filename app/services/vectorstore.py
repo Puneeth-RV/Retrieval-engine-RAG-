@@ -4,7 +4,7 @@ from qdrant_client import QdrantClient, models
 
 from app.config import settings
 
-# Single client instance — reused across all requests
+# Single client instance - reused across all requests
 # (unlike the old code which created a new client per query)
 client = QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
 
@@ -59,7 +59,7 @@ def search(query_vector: list[float], session_id: str, top_k: int) -> list:
     """
     Search Qdrant for chunks matching the query, filtered by session_id.
 
-    This is how we isolate each user's documents — only their chunks
+    This is how we isolate each user's documents - only their chunks
     are searched, not everyone else's.
     """
     return client.query_points(

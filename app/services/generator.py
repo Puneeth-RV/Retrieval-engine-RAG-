@@ -12,26 +12,26 @@ Rules:
 - Keep answers concise
 
 Formatting (you MUST follow this exactly):
-- Start directly with a 1-2 sentence answer — no label like "Summary:" or "Answer:"
+- Start directly with a 1-2 sentence answer - no label like "Summary:" or "Answer:"
 - Use `## Heading` for section titles when needed (no bold for headings)
 - Use `- item` for bullet lists (always use dash, never asterisk)
 - Use `1. item` for numbered/sequential lists
 - Use **bold** only for key terms and source filenames within sentences
 - Separate sections with a blank line
 - Never prefix your response with labels like "Summary:", "Answer:", "Response:", etc.
-- Never use colons as fake headings like "Topic: description" — use proper headings instead"""
+- Never use colons as fake headings like "Topic: description" - use proper headings instead"""
 
 
-REWRITE_PROMPT = """Given the conversation history and a follow-up question, rewrite the follow-up into a standalone question that can be understood without the history. If the follow-up is already standalone, return it unchanged. Only output the rewritten question — no preamble, no explanation."""
+REWRITE_PROMPT = """Given the conversation history and a follow-up question, rewrite the follow-up into a standalone question that can be understood without the history. If the follow-up is already standalone, return it unchanged. Only output the rewritten question - no preamble, no explanation."""
 
 
-SUGGEST_PROMPT = """Generate exactly 3 short, interesting questions a reader could ask about the given document excerpts. Questions must be concrete and specific to the content (not generic). Each under 80 characters. Number them 1. 2. 3. — one per line, nothing else. No preamble, no explanation."""
+SUGGEST_PROMPT = """Generate exactly 3 short, interesting questions a reader could ask about the given document excerpts. Questions must be concrete and specific to the content (not generic). Each under 80 characters. Number them 1. 2. 3. - one per line, nothing else. No preamble, no explanation."""
 
 
 async def suggest_questions(chunks: list[str]) -> list[str]:
     """
     Generate 3 starter questions based on sample document chunks.
-    Returns an empty list on any failure — suggestions are nice-to-have.
+    Returns an empty list on any failure - suggestions are nice-to-have.
     """
     import re
 

@@ -5,7 +5,7 @@ def chunk_text(text: str) -> list[str]:
     """
     Split text into overlapping chunks, breaking at sentence boundaries.
 
-    This replaces llama_index's SentenceSplitter — same idea, zero dependencies.
+    This replaces llama_index's SentenceSplitter - same idea, zero dependencies.
     """
     chunk_size = settings.CHUNK_SIZE
     overlap = settings.CHUNK_OVERLAP

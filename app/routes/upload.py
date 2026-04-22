@@ -20,8 +20,8 @@ async def upload_files(
     """
     Upload documents, chunk them, embed them, and store in Qdrant.
 
-    Flow: files → extract text → chunk → embed via Jina → store in Qdrant
-    Everything happens in memory — no files are saved to disk.
+    Flow: files -> extract text -> chunk -> embed via Jina -> store in Qdrant
+    Everything happens in memory - no files are saved to disk.
     """
     # Validate file count
     if len(files) > settings.MAX_FILES_PER_UPLOAD:
