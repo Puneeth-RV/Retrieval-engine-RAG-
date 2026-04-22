@@ -54,39 +54,49 @@ async def rewrite_query(question: str, history: list[tuple[str, str]]) -> str:
     return rewritten or question
 
 
-async def generate_answer(
+def _build_messages(
     question: str,
     chunks: list[str],
     filenames: list[str],
-    history: list[tuple[str, str]] | None = None,
-) -> str:
-    """
-    Generate an answer using Groq's Llama 3 model.
-
-    Takes the user's question, retrieved context chunks, and optional
-    chat history, builds a prompt, and returns the LLM's answer.
-    """
+    history: list[tuple[str, str]] | None,
+) -> list[dict]:
     context = "\n\n---\n\n".join(
         f"[Source: {filename}]\n{chunk}"
         for chunk, filename in zip(chunks, filenames)
     )
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-
     for prev_q, prev_a in history or []:
         messages.append({"role": "user", "content": prev_q})
         messages.append({"role": "assistant", "content": prev_a})
-
     messages.append({
         "role": "user",
         "content": f"Context:\n{context}\n\nQuestion: {question}",
     })
+    return messages
 
-    response = await client.chat.completions.create(
+
+async def generate_answer_stream(
+    question: str,
+    chunks: list[str],
+    filenames: list[str],
+    history: list[tuple[str, str]] | None = None,
+):
+    """
+    Stream answer tokens from Groq as they arrive.
+    Yields string deltas.
+    """
+    messages = _build_messages(question, chunks, filenames, history)
+
+    stream = await client.chat.completions.create(
         model=settings.GROQ_MODEL,
         messages=messages,
         max_tokens=settings.MAX_TOKENS,
         temperature=0.2,
+        stream=True,
     )
 
-    return response.choices[0].message.content
+    async for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta

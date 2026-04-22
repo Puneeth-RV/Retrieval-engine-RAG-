@@ -249,19 +249,14 @@ queryForm.addEventListener("submit", async (e) => {
             QUERY_TIMEOUT_MS
         );
 
-        thinkingEl.remove();
-
         if (!res.ok) {
+            thinkingEl.remove();
             const msg = await safeErrorMessage(res, "Something went wrong.");
             addMessage(msg, "assistant");
-        } else {
-            const data = await res.json();
-            if (!data?.answer) {
-                addMessage("No answer returned. Please try a different question.", "assistant");
-            } else {
-                addAnswer(data.answer, data.sources || []);
-            }
+            return;
         }
+
+        await streamAnswer(res, thinkingEl);
     } catch (err) {
         thinkingEl.remove();
         const msg = err?.name === "AbortError"
@@ -274,6 +269,116 @@ queryForm.addEventListener("submit", async (e) => {
         questionInput.focus();
     }
 });
+
+async function streamAnswer(res, thinkingEl) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let answerText = "";
+    let sources = [];
+    let answerContent = null;
+    let messageDiv = null;
+    let firstToken = true;
+    let errored = false;
+
+    const renderAnswer = () => {
+        if (answerContent) answerContent.innerHTML = formatAnswer(answerText);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    };
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            let evt;
+            try { evt = JSON.parse(line); } catch { continue; }
+
+            if (evt.type === "sources") {
+                sources = evt.sources || [];
+            } else if (evt.type === "token") {
+                if (firstToken) {
+                    thinkingEl.remove();
+                    clearEmptyState();
+                    messageDiv = document.createElement("div");
+                    messageDiv.className = "message assistant";
+                    answerContent = document.createElement("div");
+                    answerContent.className = "answer-content";
+                    messageDiv.appendChild(answerContent);
+                    chatHistory.appendChild(messageDiv);
+                    firstToken = false;
+                }
+                answerText += evt.text;
+                renderAnswer();
+            } else if (evt.type === "error") {
+                thinkingEl.remove();
+                addMessage(evt.message || "Something went wrong.", "assistant");
+                errored = true;
+            }
+        }
+    }
+
+    if (errored) return;
+
+    if (firstToken) {
+        thinkingEl.remove();
+        addMessage("No answer returned. Please try a different question.", "assistant");
+        return;
+    }
+
+    if (sources.length > 0 && messageDiv) {
+        appendSources(messageDiv, sources);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+}
+
+function appendSources(parentDiv, sources) {
+    const sourcesDiv = document.createElement("div");
+    sourcesDiv.className = "sources";
+
+    const toggle = document.createElement("button");
+    toggle.className = "sources-toggle";
+    toggle.innerHTML = `<span class="toggle-arrow">&#9654;</span> Sources (${sources.length})`;
+    sourcesDiv.appendChild(toggle);
+
+    const sourcesList = document.createElement("div");
+    sourcesList.className = "sources-list collapsed";
+
+    for (const source of sources) {
+        const card = document.createElement("div");
+        card.className = "source-card";
+
+        const filename = document.createElement("span");
+        filename.className = "source-filename";
+        filename.textContent = source.filename;
+
+        const score = document.createElement("span");
+        score.className = "source-score";
+        score.textContent = `(${(source.score * 100).toFixed(1)}% match)`;
+
+        const preview = document.createElement("div");
+        preview.className = "source-preview";
+        preview.textContent = source.text_preview;
+
+        card.appendChild(filename);
+        card.appendChild(score);
+        card.appendChild(preview);
+        sourcesList.appendChild(card);
+    }
+
+    toggle.addEventListener("click", () => {
+        sourcesList.classList.toggle("collapsed");
+        toggle.classList.toggle("open");
+    });
+
+    sourcesDiv.appendChild(sourcesList);
+    parentDiv.appendChild(sourcesDiv);
+}
 
 function clearEmptyState() {
     const empty = chatHistory.querySelector(".empty-state");
@@ -362,64 +467,6 @@ function formatAnswer(text) {
     }
 
     return html;
-}
-
-function addAnswer(answer, sources) {
-    const div = document.createElement("div");
-    div.className = "message assistant";
-
-    // Answer text — render with formatting
-    const answerDiv = document.createElement("div");
-    answerDiv.className = "answer-content";
-    answerDiv.innerHTML = formatAnswer(answer);
-    div.appendChild(answerDiv);
-
-    // Collapsible source cards
-    if (sources && sources.length > 0) {
-        const sourcesDiv = document.createElement("div");
-        sourcesDiv.className = "sources";
-
-        const toggle = document.createElement("button");
-        toggle.className = "sources-toggle";
-        toggle.innerHTML = `<span class="toggle-arrow">&#9654;</span> Sources (${sources.length})`;
-        sourcesDiv.appendChild(toggle);
-
-        const sourcesList = document.createElement("div");
-        sourcesList.className = "sources-list collapsed";
-
-        for (const source of sources) {
-            const card = document.createElement("div");
-            card.className = "source-card";
-
-            const filename = document.createElement("span");
-            filename.className = "source-filename";
-            filename.textContent = source.filename;
-
-            const score = document.createElement("span");
-            score.className = "source-score";
-            score.textContent = `(${(source.score * 100).toFixed(1)}% match)`;
-
-            const preview = document.createElement("div");
-            preview.className = "source-preview";
-            preview.textContent = source.text_preview;
-
-            card.appendChild(filename);
-            card.appendChild(score);
-            card.appendChild(preview);
-            sourcesList.appendChild(card);
-        }
-
-        toggle.addEventListener("click", () => {
-            sourcesList.classList.toggle("collapsed");
-            toggle.classList.toggle("open");
-        });
-
-        sourcesDiv.appendChild(sourcesList);
-        div.appendChild(sourcesDiv);
-    }
-
-    chatHistory.appendChild(div);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
 // --- Theme Toggle ---
